@@ -137,6 +137,7 @@ if __name__ == "__main__":
     argparser.add_argument('-O', '--aws-access-key', default=os.environ.get('AWS_ACCESS_KEY', None), help='AWS Access Key ID. Defaults to the value of the AWS_ACCESS_KEY environment variable (if set).')
     argparser.add_argument('-W', '--aws-secret-key', default=os.environ.get('AWS_SECRET_KEY', None), help='AWS Secret Access Key. Defaults to the value of the AWS_SECRET_KEY environment variable (if set).')
     argparser.add_argument('-r', '--reverse-domains', action="store_true", help="reverse given domain")
+    argparser.add_argument('-i', '--information-log', action="store_true", help="print the data information")
 
     args = argparser.parse_args()
 
@@ -186,6 +187,8 @@ if __name__ == "__main__":
     for url, index_data in chain.from_iterable(domains):
         src_keys.add(src_keystem.format(**index_data))
         index_results.append(index_data)
+        if args.information_log:
+            print index_data
 
     num_files = len(src_keys)
     num_webpages = len(index_results)
