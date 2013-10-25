@@ -21,6 +21,7 @@ import struct
 import tempfile
 import time
 import traceback
+import urlparse
 
 from datetime import timedelta
 from itertools import chain
@@ -120,6 +121,12 @@ def partition(li, n):
     for i in xrange(n):
         yield li[int(round(division * i)): int(round(division * (i + 1)))]
 
+def reverse(domain):
+    domain = urlparse.urlparse(domain).netloc
+    ds = domain.split('.')
+    ds.reverse()
+    return '.'.join(ds)
+
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description="Copy common-crawl webpages from a given domain or comma-delimited list of domains to an s3 location specified by the user.")
     argparser.add_argument('command', choices=['check', 'copy'], help='check to list # of webpages in index for given domain; copy to copy those webpages to an s3 location')
@@ -129,7 +136,12 @@ if __name__ == "__main__":
     argparser.add_argument('-p', '--parallel', type=int, default=4, help='how many parallel processes to run (default = 4)')
     argparser.add_argument('-O', '--aws-access-key', default=os.environ.get('AWS_ACCESS_KEY', None), help='AWS Access Key ID. Defaults to the value of the AWS_ACCESS_KEY environment variable (if set).')
     argparser.add_argument('-W', '--aws-secret-key', default=os.environ.get('AWS_SECRET_KEY', None), help='AWS Secret Access Key. Defaults to the value of the AWS_SECRET_KEY environment variable (if set).')
+    argparser.add_argument('-r', '--reverse-domains', action="store_true", help="reverse given domain")
+
     args = argparser.parse_args()
+
+    if args.reverse_domains:
+      domains = [reverse(s) for s in args.domains.split(',')]
 
     if not args.aws_access_key:
         argparser.error("Error: neither --aws-access-key option nor AWS_ACCESS_KEY environment variable set")
@@ -166,7 +178,11 @@ if __name__ == "__main__":
     src_keys = set()
     index_results = []
 
-    domains = [reader.itemsiter(s.strip()) for s in args.domains.split(',')]
+    if args.reverse_domains:
+      domains = [reader.itemsiter(reverse(s.strip())) for s in args.domains.split(',')]
+    else:
+      domains = [reader.itemsiter(s.strip()) for s in args.domains.split(',')]
+
     for url, index_data in chain.from_iterable(domains):
         src_keys.add(src_keystem.format(**index_data))
         index_results.append(index_data)
